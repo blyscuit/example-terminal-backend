@@ -392,6 +392,7 @@ post '/create_paynow_payment_intent' do
   payment_method: payment_id,
   confirm: true,
   return_url: params["return_url"] || 'https://example.com',
+        payment_method_types: ['paynow'],
 })
   rescue Stripe::StripeError => e
     status 402
