@@ -122,13 +122,13 @@ post '/create_payment_intent' do
 
   begin
     payment_intent = Stripe::PaymentIntent.create(
-      :payment_method_types => ['paynow'],
+      :payment_method_types => params[:payment_method_types] || ['card_present'],
+      :capture_method => params[:capture_method] || 'manual',
       :amount => params[:amount],
       :currency => params[:currency] || 'usd',
       :description => params[:description] || 'Example PaymentIntent',
+      :payment_method_options => params[:payment_method_options] || [],
       :receipt_email => params[:receipt_email],
-      :capture_method => 'automatic',
-      :payment_method_options => ['paynow'],
     )
   rescue Stripe::StripeError => e
     status 402
@@ -137,7 +137,7 @@ post '/create_payment_intent' do
 
   log_info("PaymentIntent successfully created: #{payment_intent.id}")
   status 200
-  return payment_intent.to_json
+  return {:intent => payment_intent.id, :secret => payment_intent.client_secret}.to_json
 end
 
 # This endpoint captures a PaymentIntent.
@@ -178,6 +178,61 @@ post '/cancel_payment_intent' do
   return {:intent => payment_intent.id, :secret => payment_intent.client_secret}.to_json
 end
 
+# This endpoint returns session payment status.
+post '/check_payment_session' do
+  validationError = validateApiKey
+  if !validationError.nil?
+    status 400
+    return log_info(validationError)
+  end
+  begin
+    id = params["session_id"]
+    session = Stripe::Checkout::Session.retrieve(id)
+  rescue Stripe::StripeError => e
+    status 402
+    return log_info("Error checking session! #{e.message}")
+  end
+
+  # Optionally reconcile the PaymentIntent with your internal order system.
+  status 200
+  return session.to_json
+end
+
+# This endpoint create new paynow session payment.
+post '/creat_paynow_payment_session' do
+  validationError = validateApiKey
+  if !validationError.nil?
+    status 400
+    return log_info(validationError)
+  end
+  begin
+    session = Stripe::Checkout::Session.create({
+  mode: 'payment',
+  ui_mode: 'hosted',
+  customer_email: params["customer_email"] || 'platform+cbtl@nimblehq.co',
+  success_url: params["success_url"] || 'https://example.com',
+  payment_method_types: params["payment_method_types"] || ['paynow'],
+  line_items: [
+    {
+      price_data: {
+        currency: params["currency"] || 'sgd',
+        unit_amount: params["unit_amount"] || 1000,
+        product_data: {name: params["product_name"] || 'CBTL Coffee'},
+      },
+      quantity: 1,
+    },
+  ],
+})
+  rescue Stripe::StripeError => e
+    status 402
+    return log_info("Error creating session! #{e.message}")
+  end
+
+  # Optionally reconcile the PaymentIntent with your internal order system.
+  status 200
+  return session.to_json
+end
+
 # This endpoint creates a SetupIntent.
 # https://stripe.com/docs/api/setup_intents/create
 post '/create_setup_intent' do
@@ -189,7 +244,7 @@ post '/create_setup_intent' do
 
   begin
     setup_intent_params = {
-      :payment_method_types => ['paynow'],
+      :payment_method_types => params[:payment_method_types] || ['card_present'],
     }
 
     if !params[:customer].nil?
