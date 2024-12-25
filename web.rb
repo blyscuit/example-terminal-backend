@@ -128,6 +128,7 @@ post '/create_payment_intent' do
       :description => params[:description] || 'Example PaymentIntent',
       :receipt_email => params[:receipt_email],
       :capture_method => 'automatic',
+      :payment_method_options => ['paynow'],
     )
   rescue Stripe::StripeError => e
     status 402
