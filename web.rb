@@ -195,6 +195,7 @@ post '/check_payment_session' do
 
   # Optionally reconcile the PaymentIntent with your internal order system.
   status 200
+  content_type :json
   return session.to_json
 end
 
@@ -230,6 +231,7 @@ post '/creat_paynow_payment_session' do
 
   # Optionally reconcile the PaymentIntent with your internal order system.
   status 200
+  content_type :json
   return session.to_json
 end
 
@@ -401,6 +403,7 @@ post '/create_paynow_payment_intent' do
 
   # Optionally reconcile the PaymentIntent with your internal order system.
   status 200
+  content_type :json
   return payment_intent.to_json
 end
 
@@ -421,6 +424,7 @@ post '/check_payment_intent' do
 
   # Optionally reconcile the PaymentIntent with your internal order system.
   status 200
+  content_type :json
   return payment_intent.to_json
 end
 
