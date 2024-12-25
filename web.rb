@@ -372,6 +372,55 @@ get '/list_locations' do
   return locations.data.to_json
 end
 
+# This endpoint create new paynow payment, create new intent with paynow captured
+post '/create_paynow_payment_intent' do
+  validationError = validateApiKey
+  if !validationError.nil?
+    status 400
+    return log_info(validationError)
+  end
+  begin
+
+    payment = Stripe::PaymentMethod.create({type: 'paynow'})
+    paymentId = payment.id!
+    paymentIntent = Stripe::PaymentIntent.create({
+  amount: params["unit_amount"] || 1000,
+  currency: params["currency"] || 'sgd',
+  description: '(created by Stripe Shell)',
+  payment_method: paymentId,
+  confirm: true,
+  return_url: params["return_url"] || 'https://example.com',
+})
+  rescue Stripe::StripeError => e
+    status 402
+    return log_info("Error creating intent! #{e.message}")
+  end
+
+  # Optionally reconcile the PaymentIntent with your internal order system.
+  status 200
+  return paymentIntent.to_json
+end
+
+# This endpoint returns session payment status.
+post '/check_payment_intent' do
+  validationError = validateApiKey
+  if !validationError.nil?
+    status 400
+    return log_info(validationError)
+  end
+  begin
+    id = params["intent_id"]
+    paymentIntent = Stripe::PaymentIntent.retrieve(id)
+  rescue Stripe::StripeError => e
+    status 402
+    return log_info("Error checking session! #{e.message}")
+  end
+
+  # Optionally reconcile the PaymentIntent with your internal order system.
+  status 200
+  return paymentIntent.to_json
+end
+
 # This endpoint creates a Location.
 # https://stripe.com/docs/api/terminal/locations
 post '/create_location' do
