@@ -381,13 +381,15 @@ post '/create_paynow_payment_intent' do
   end
   begin
 
+    # Create new payment
     payment = Stripe::PaymentMethod.create({type: 'paynow'})
-    paymentId = payment.id!
-    paymentIntent = Stripe::PaymentIntent.create({
+    payment_id = payment.id
+    
+    payment_intent = Stripe::PaymentIntent.create({
   amount: params["unit_amount"] || 1000,
   currency: params["currency"] || 'sgd',
   description: '(created by Stripe Shell)',
-  payment_method: paymentId,
+  payment_method: payment_id,
   confirm: true,
   return_url: params["return_url"] || 'https://example.com',
 })
@@ -398,7 +400,7 @@ post '/create_paynow_payment_intent' do
 
   # Optionally reconcile the PaymentIntent with your internal order system.
   status 200
-  return paymentIntent.to_json
+  return payment_intent.to_json
 end
 
 # This endpoint returns session payment status.
@@ -410,7 +412,7 @@ post '/check_payment_intent' do
   end
   begin
     id = params["intent_id"]
-    paymentIntent = Stripe::PaymentIntent.retrieve(id)
+    payment_intent = Stripe::PaymentIntent.retrieve(id)
   rescue Stripe::StripeError => e
     status 402
     return log_info("Error checking session! #{e.message}")
@@ -418,7 +420,7 @@ post '/check_payment_intent' do
 
   # Optionally reconcile the PaymentIntent with your internal order system.
   status 200
-  return paymentIntent.to_json
+  return payment_intent.to_json
 end
 
 # This endpoint creates a Location.
