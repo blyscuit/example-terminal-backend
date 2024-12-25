@@ -123,11 +123,9 @@ post '/create_payment_intent' do
   begin
     payment_intent = Stripe::PaymentIntent.create(
       :payment_method_types => ['paynow'],
-      :capture_method => params[:capture_method] || 'manual',
       :amount => params[:amount],
       :currency => params[:currency] || 'usd',
       :description => params[:description] || 'Example PaymentIntent',
-      :payment_method_options => params[:payment_method_options] || [],
       :receipt_email => params[:receipt_email],
       :capture_method => 'automatic',
     )
