@@ -412,7 +412,7 @@ post '/check_payment_intent' do
     return log_info(validationError)
   end
   begin
-    id = params["intent_id"]
+    id = params["payment_intent_id"]
     payment_intent = Stripe::PaymentIntent.retrieve(id)
   rescue Stripe::StripeError => e
     status 402
