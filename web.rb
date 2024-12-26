@@ -381,6 +381,18 @@ post '/create_paynow_payment_intent' do
     status 400
     return log_info(validationError)
   end
+
+    # Read the raw JSON body
+  request_body = request.body.read
+  
+  # Parse the JSON body into a Ruby hash
+  begin
+    json_data = JSON.parse(request_body)
+  rescue JSON::ParserError => e
+    status 400
+    return { error: "Invalid JSON format: #{e.message}" }.to_json
+  end
+  
   begin
 
     # Create new payment
@@ -388,12 +400,12 @@ post '/create_paynow_payment_intent' do
     payment_id = payment.id
     
     payment_intent = Stripe::PaymentIntent.create({
-  amount: params["unit_amount"] || 1000,
-  currency: params["currency"] || 'sgd',
+  amount: json_data["unit_amount"] || 1000,
+  currency: json_data["currency"] || 'sgd',
   description: '(created by Stripe Shell)',
   payment_method: payment_id,
   confirm: true,
-  return_url: params["return_url"] || 'https://example.com',
+  return_url: json_data["return_url"] || 'https://example.com',
         payment_method_types: ['paynow'],
 })
   rescue Stripe::StripeError => e
@@ -414,8 +426,20 @@ post '/check_payment_intent' do
     status 400
     return log_info(validationError)
   end
+
+    # Read the raw JSON body
+  request_body = request.body.read
+  
+  # Parse the JSON body into a Ruby hash
   begin
-    id = params["payment_intent_id"]
+    json_data = JSON.parse(request_body)
+  rescue JSON::ParserError => e
+    status 400
+    return { error: "Invalid JSON format: #{e.message}" }.to_json
+  end
+  
+  begin
+    id = json_data["payment_intent_id"]
     payment_intent = Stripe::PaymentIntent.retrieve(id)
   rescue Stripe::StripeError => e
     status 402
